@@ -64,10 +64,13 @@ void onI2CRead() {
 }
 
 void setDeviceAddress(uint8_t addr) {
+
     Wire.begin(addr);
     // register the I2C Handlers
     Wire.onReceive(onI2CWrite);
     Wire.onRequest(onI2CRead);
+    Serial.print("device address set to ");
+    Serial.println(addr);
 }
 
 uint8_t readDrawerStatus(int x) {
