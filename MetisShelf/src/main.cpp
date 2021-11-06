@@ -57,18 +57,18 @@ void onI2CWrite(int nBytesRxed) {
     if (Wire.available() == 1) {
         setRegAddr = Wire.read();
 
-        Serial.print("changing set addr to ");
-        Serial.println(setRegAddr, HEX);
+        // Serial.print("changing target/dest addr to ");
+        // Serial.println(setRegAddr, HEX);
     } else {
         byte regAddr = Wire.read();
         byte value   = Wire.read();
 
         writeReg(regAddr, value);
 
-        Serial.print("told to write value ");
-        Serial.print(value);
-        Serial.print(" into reg ");
-        Serial.println(regAddr, HEX);
+        // Serial.print("told to write value ");
+        // Serial.print(value);
+        // Serial.print(" into reg ");
+        // Serial.println(regAddr, HEX);
     }
     // int x = Wire.read();         // receive byte as an integer
     // Serial.print((char)x, HEX);  // print the integer
@@ -126,7 +126,7 @@ void writeReg(byte regAddr, byte value) {
     case SHELF_UID_B2: setUIDByte(2, value); break;
     case SHELF_UID_B3: setUIDByte(3, value); break;
 
-    case SHELF_I2C_ADDR: setDeviceAddress(value); break;
+    case SHELF_DEV_ADDR: setDeviceAddress(value); break;
     case SHELF_SEL_COL: selectedCol = value; break;
     case SHELF_SEL_ROW: selectedRow = value; break;
     case SHELF_DRAWER_STAT:

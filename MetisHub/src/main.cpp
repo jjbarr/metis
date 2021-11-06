@@ -6,12 +6,22 @@
 #include <EEPROM.h>
 #include <Wire.h>
 
+#define NUMSHELFDEVICES 16
+
 // --- prototypes ---
 void onShelfPing(int numBytes);
 byte readShelfReg(byte shelfAddr, byte regAddr);
 void writeShelfReg(byte shelfAddr, byte regAddr, byte value);
 void enrollNewShelf();
 UID generateNewUID();
+
+// globals
+typedef struct {
+    UID uid;
+    byte addr;
+} ShelfDev;
+
+ShelfDev shelves[NUMSHELFDEVICES];  //= {{0,0}}
 
 // --- utility function ---
 byte handledEndTransmission(void) {
@@ -32,7 +42,6 @@ void setup() {
     Wire.onReceive(onShelfPing);
     Serial.begin(9600);
 
-    Serial.print(generateNewUID());
     Serial.println(" --- starting --- ");
 }
 
@@ -52,6 +61,34 @@ void loop() {
         Serial.println("waitng...");
         // delay(1500);
     }
+}
+
+// -- impls and tools ---
+
+byte getDevAddrForUID(UID uid) {
+    // return of 0xff means it failed
+
+    for (int i = 0; i < NUMSHELFDEVICES; i++) {
+        if (shelves[i].uid == uid) {
+            return shelves[i].addr;
+        }
+    }
+    // not found
+    return 0xff;
+}
+
+int setDevAddrForUID(UID uid, byte addr) {
+    // return -1 means it failed
+    for (int i = 0; i < NUMSHELFDEVICES; i++) {
+        ShelfDev shelf = shelves[i];
+        if (shelf.uid == uid || shelf.uid == 0) {
+            shelf.uid  = uid;
+            shelf.addr = addr;
+            shelves[i] = shelf;
+            return 0;
+        }
+    }
+    return -1;
 }
 
 UID generateNewUID(void) {
@@ -108,9 +145,11 @@ void writeShelfUID(byte shelfAddr, UID id) {
     }
 }
 
+byte next_shelf_addr = ASSIGNED_SHELF_BASE_ADDR;
 void enrollNewShelf() {
     Serial.println("enrolling shelf");
 
+    // check uid
     UID uid = readShelfUID(UNASSIGNED_SHELF_ADDR);
     Serial.print("uid = ");
     Serial.println(uid, HEX);
@@ -120,9 +159,18 @@ void enrollNewShelf() {
         Serial.print("assigning new uid 0x");
         Serial.println(newuid, HEX);
         writeShelfUID(UNASSIGNED_SHELF_ADDR, newuid);
+        uid = newuid;
     }
 
-    Serial.println("Done enrolling shelf");
+    // check i2c address
+    byte addr = next_shelf_addr;
+    next_shelf_addr += 1;
+    setDevAddrForUID(uid, addr);
+    writeShelfReg(UNASSIGNED_SHELF_ADDR, SHELF_DEV_ADDR, addr);
+
+    delay(100);
+
+        Serial.println("Done enrolling shelf");
 }
 
 void onShelfPing(int numBytes) {

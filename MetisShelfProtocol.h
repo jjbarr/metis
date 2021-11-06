@@ -21,7 +21,7 @@ typedef uint32_t UID;
 
 #define SHELF_DRAWERS_WIDE 0xa0  /// r   : width of shelf (in drawers)
 #define SHELF_DRAWERS_HIGH 0xa1  /// r   : height of shelf (in drawers)
-#define SHELF_I2C_ADDR 0xad      /// w   : device address (init=unassigned addr)
+#define SHELF_DEV_ADDR 0xad      /// w   : device address (init=unassigned addr)
 /// >>> drawer addressing
 #define SHELF_SEL_COL 0xc0      /// r/w : current drawer horizontal index
 #define SHELF_SEL_ROW 0xc1      /// r/w : current drawer vertical index
