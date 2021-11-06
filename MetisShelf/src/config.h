@@ -6,6 +6,6 @@
 #define P_BANGRESET 2
 
 /*shelf dimensions*/
-#define SH_HEIGHT 3
-#define SH_WIDTH 4
+#define D_HEIGHT 3
+#define D_WIDTH 4
 #endif
