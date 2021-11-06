@@ -7,14 +7,17 @@
 
 // prototypes for code organization
 void setup_peripherals(void);
+
+byte readReg(byte regAddr);
+void writeReg(byte regAddr, byte value);
+
 bool uidIsValid(void);
 UID getUID(void);
-int8_t getUIDByte(int);
-void setUIDByte(int, uint8_t);
-uint8_t readReg(uint8_t);
+byte getUIDByte(int);
+void setUIDByte(int, byte);
 
 typedef int Drawer;
-void writeDrawer(Drawer* drawer, uint8_t col, uint8_t row, bool onOff);
+void writeDrawer(Drawer* drawer, byte col, byte row, bool onOff);
 
 // --- hardware / pin names ---
 #define WAKE_DELAY 100
@@ -24,8 +27,9 @@ void writeDrawer(Drawer* drawer, uint8_t col, uint8_t row, bool onOff);
 #define CLEAR_UID_ON_BOOT 0
 
 // --- register globals ---
-uint8_t selectedCol = 0;
-uint8_t selectedRow = 0;
+byte selectedCol = 0x11;
+byte selectedRow = 0x12;
+byte setRegAddr  = 0x13;
 
 // --- the nitty gritty ---
 void setup() {
@@ -33,12 +37,14 @@ void setup() {
 
     // dubug purposes
     Serial.print("UID: ");
-    Serial.println(getUID());
+    Serial.println(getUID(), HEX);
 
     // send an addr request to master
+    Serial.println("requesting enroll...");
     Wire.beginTransmission(HUB_ADDR);
     Wire.write(HUB_ENROL_REQ);
-    Wire.endTransmission();
+    Wire.endTransmission(true);
+    Serial.println("... done");
 }
 
 void loop() {
@@ -48,77 +54,103 @@ void loop() {
 // function that executes whenever data is received from master
 // this function is registered as an event, see setup()
 void onI2CWrite(int nBytesRxed) {
-    int x = Wire.read();    // receive byte as an integer
-    Serial.print((char)x);  // print the integer
+    if (Wire.available() == 1) {
+        setRegAddr = Wire.read();
+
+        Serial.print("changing set addr to ");
+        Serial.println(setRegAddr, HEX);
+    } else {
+        byte regAddr = Wire.read();
+        byte value   = Wire.read();
+
+        writeReg(regAddr, value);
+
+        Serial.print("told to write value ");
+        Serial.print(value);
+        Serial.print(" into reg ");
+        Serial.println(regAddr, HEX);
+    }
+    // int x = Wire.read();         // receive byte as an integer
+    // Serial.print((char)x, HEX);  // print the integer
 }
 
 void onI2CRead() {
-    if (Wire.available() != 1) {
-        Serial.print("all the read requests should be 1 byte long, got ");
-        Serial.print(Wire.available());
-        Serial.println(" bytes.");
-    }
+    // if (Wire.available() != 1) {
+    //     Serial.print("all the read requests should be 1 byte long, got ");
+    //     Serial.print(Wire.available());
+    //     Serial.println(" bytes.");
+    // }
     // the addr they are requesting
-    uint8_t regAddr = Wire.read();
-    Wire.write(readReg(regAddr));
+    Wire.write(readReg(setRegAddr));
 }
 
-void setDeviceAddress(uint8_t addr) {
+void setDeviceAddress(byte addr) {
 
     Wire.begin(addr);
     // register the I2C Handlers
     Wire.onReceive(onI2CWrite);
     Wire.onRequest(onI2CRead);
     Serial.print("device address set to ");
-    Serial.println(addr);
+    Serial.println(addr, HEX);
 }
 
-uint8_t readDrawerStatus(int x) {
+byte readDrawerStatus(int x) {
     return 69;
 }
 
-uint8_t readReg(uint8_t regAddr) {
+byte readReg(byte regAddr) {
     switch (regAddr) {
 
     case SHELF_UID_B0: return getUIDByte(0);
     case SHELF_UID_B1: return getUIDByte(1);
     case SHELF_UID_B2: return getUIDByte(2);
-    case SHELF_UID_B3: return getUIDByte(4);
+    case SHELF_UID_B3: return getUIDByte(3);
     case SHELF_DRAWERS_WIDE: return NUM_DRAWERS_WIDE;
     case SHELF_DRAWERS_HIGH: return NUM_DRAWERS_HIGH;
     case SHELF_SEL_COL: return selectedCol;
     case SHELF_SEL_ROW: return selectedRow;
     case SHELF_DRAWER_STAT:
         return readDrawerStatus((selectedCol << 8) | selectedRow);
-    default: break;
+    default: {
+        Serial.print("unknown reg read to ");
+        Serial.println(regAddr, HEX);
+    };
     }
 }
 
-void writeReg(uint8_t regAddr, uint8_t value) {
+void writeReg(byte regAddr, byte value) {
     int drawer = 0;
     switch (regAddr) {
-    case SHELF_UID_B0: setUIDByte(0, value);
-    case SHELF_UID_B1: setUIDByte(1, value);
-    case SHELF_UID_B2: setUIDByte(2, value);
-    case SHELF_UID_B3: setUIDByte(3, value);
+    case SHELF_UID_B0: setUIDByte(0, value); break;
+    case SHELF_UID_B1: setUIDByte(1, value); break;
+    case SHELF_UID_B2: setUIDByte(2, value); break;
+    case SHELF_UID_B3: setUIDByte(3, value); break;
 
-    case SHELF_I2C_ADDR: setDeviceAddress(value);
-    case SHELF_SEL_COL: selectedCol = value;
-    case SHELF_SEL_ROW: selectedRow = value;
+    case SHELF_I2C_ADDR: setDeviceAddress(value); break;
+    case SHELF_SEL_COL: selectedCol = value; break;
+    case SHELF_SEL_ROW: selectedRow = value; break;
     case SHELF_DRAWER_STAT:
         writeDrawer(&drawer, selectedCol, selectedRow, (bool)value);
+        break;
     case SHELF_CMD: {
+        // TODO: make this do things.
         Serial.print("turn all leds to ");
         Serial.println(value);
+        break;
     }
-    default: break;
+    default: {
+        Serial.print("unknown reg write to ");
+        Serial.print(regAddr, HEX);
+        Serial.print(" of value ");
+        Serial.println(value, HEX);
+    };
     }
 }
 
 void setup_peripherals(void) {
     // this is for dev purposes
     Serial.begin(9600);  // start serial for output
-    Serial.print("initing peripherals...");
+    Serial.println("initing peripherals...");
 
     // --- boot up ---
     // on boot we need to wait a bit as it is possible we were just hot plugged
@@ -137,7 +169,7 @@ void setup_peripherals(void) {
     EEPROM.begin();
 
     // ...
-    Serial.println(" done!");
+    Serial.println("... done!");
 
     if (CLEAR_UID_ON_BOOT) {
         Serial.println("clearing UID");
@@ -157,7 +189,7 @@ UID getUID(void) {
            ((EEPROM[1] << 8) | (EEPROM[0] << 0));
 }
 
-int8_t getUIDByte(int addr) {
+byte getUIDByte(int addr) {
     /// -1 return is means invalid addr requested, but just don't do that please
     if (addr < 0 || addr > 3) {
         return -1;
@@ -166,7 +198,7 @@ int8_t getUIDByte(int addr) {
     }
 }
 
-void setUIDByte(int byteIndex, uint8_t value) {
+void setUIDByte(int byteIndex, byte value) {
     if (byteIndex < 0 || byteIndex > 3) {
         Serial.print("invalid UID byte addr, tried to write to");
         Serial.println(byteIndex);
@@ -176,7 +208,7 @@ void setUIDByte(int byteIndex, uint8_t value) {
     }
 }
 
-void writeDrawer(Drawer* drawer, uint8_t col, uint8_t row, bool onOff) {
+void writeDrawer(Drawer* drawer, byte col, byte row, bool onOff) {
     Serial.print("set led ");
     Serial.print(col);
     Serial.print(" over and ");

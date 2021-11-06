@@ -10,11 +10,11 @@ typedef uint32_t UID;
 
 /// Hub Register map
 /// >>> 0xff : enroll, start enrolling new device
-#define HUB_ENROL_REQ 0x69
+#define HUB_ENROL_REQ 0xEE
 
 /// Shelf Register Map (working addrs)
 /// >>> UID / Device data
-#define SHELF_UID_B0 0xb0  /// r/w : uid byte 0
+#define SHELF_UID_B0 0xb0  /// r/w : uid byte 0 (if 0 the uid id invalid)
 #define SHELF_UID_B1 0xb1  /// r/w : uid byte 1
 #define SHELF_UID_B2 0xb2  /// r/w : uid byte 2
 #define SHELF_UID_B3 0xb3  /// r/w : uid byte 3
