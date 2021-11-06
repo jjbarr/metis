@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Wire.h>
+#include <drawer.h>
 
 // prototypes for code organization
 void setup_peripherals(void);
@@ -16,14 +17,11 @@ UID getUID(void);
 byte getUIDByte(int);
 void setUIDByte(int, byte);
 
-typedef int Drawer;
 void writeDrawer(Drawer* drawer, byte col, byte row, bool onOff);
 
 // --- hardware / pin names ---
 #define WAKE_DELAY 100
 #define INDICATOR LED_BUILTIN
-#define NUM_DRAWERS_WIDE 5
-#define NUM_DRAWERS_HIGH 4
 #define CLEAR_UID_ON_BOOT 0
 
 // --- register globals ---
@@ -31,9 +29,12 @@ byte selectedCol = 0x11;
 byte selectedRow = 0x12;
 byte setRegAddr  = 0x13;
 
+Drawer drawer;
+
 // --- the nitty gritty ---
 void setup() {
     setup_peripherals();
+    drawer_clearstate(&drawer);
 
     // dubug purposes
     Serial.print("UID: ");
@@ -45,11 +46,15 @@ void setup() {
     Wire.write(HUB_ENROL_REQ);
     Wire.endTransmission(true);
     Serial.println("... done");
+
+    writeDrawer(&drawer, 0, 0, true);
 }
 
 void loop() {
     delay(100);
 }
+
+// --- impls and utils ---
 
 // function that executes whenever data is received from master
 // this function is registered as an event, see setup()
@@ -95,7 +100,7 @@ void setDeviceAddress(byte addr) {
 }
 
 byte readDrawerStatus(int x) {
-    return 69;
+    return drawer_isset(&drawer, selectedRow, selectedCol);
 }
 
 byte readReg(byte regAddr) {
@@ -105,8 +110,8 @@ byte readReg(byte regAddr) {
     case SHELF_UID_B1: return getUIDByte(1);
     case SHELF_UID_B2: return getUIDByte(2);
     case SHELF_UID_B3: return getUIDByte(3);
-    case SHELF_DRAWERS_WIDE: return NUM_DRAWERS_WIDE;
-    case SHELF_DRAWERS_HIGH: return NUM_DRAWERS_HIGH;
+    case SHELF_DRAWERS_WIDE: return D_WIDTH;
+    case SHELF_DRAWERS_HIGH: return D_HEIGHT;
     case SHELF_SEL_COL: return selectedCol;
     case SHELF_SEL_ROW: return selectedRow;
     case SHELF_DRAWER_STAT:
@@ -119,7 +124,6 @@ byte readReg(byte regAddr) {
 }
 
 void writeReg(byte regAddr, byte value) {
-    int drawer = 0;
     switch (regAddr) {
     case SHELF_UID_B0: setUIDByte(0, value); break;
     case SHELF_UID_B1: setUIDByte(1, value); break;
@@ -152,6 +156,8 @@ void setup_peripherals(void) {
     Serial.begin(9600);  // start serial for output
     Serial.println("initing peripherals...");
 
+    drawer_init();
+
     // --- boot up ---
     // on boot we need to wait a bit as it is possible we were just hot plugged
     // into  a network while we are waitng we turn on the D13 LED
@@ -171,7 +177,8 @@ void setup_peripherals(void) {
     // ...
     Serial.println("... done!");
 
-    if (CLEAR_UID_ON_BOOT) {
+    UID uid = getUID();
+    if (CLEAR_UID_ON_BOOT || uid == 0xFFFFFFFF) {
         Serial.println("clearing UID");
         setUIDByte(0, 0);
         setUIDByte(1, 0);
@@ -208,14 +215,20 @@ void setUIDByte(int byteIndex, byte value) {
     }
 }
 
-void writeDrawer(Drawer* drawer, byte col, byte row, bool onOff) {
+void writeDrawer(Drawer* drawer_ref, byte col, byte row, bool onOff) {
     Serial.print("set led ");
     Serial.print(col);
     Serial.print(" over and ");
     Serial.print(row);
     Serial.print(" down ");
-    if (onOff)
+    if (onOff) {
+        drawer_set(drawer_ref, row, col);
         Serial.println("on");
-    else
+
+    } else {
+        drawer_clear(drawer_ref, row, col);
         Serial.println("off");
+    }
+
+    drawer_show(drawer_ref);
 }

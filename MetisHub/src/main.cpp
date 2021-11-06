@@ -14,6 +14,8 @@ byte readShelfReg(byte shelfAddr, byte regAddr);
 void writeShelfReg(byte shelfAddr, byte regAddr, byte value);
 void enrollNewShelf();
 UID generateNewUID();
+void setDrawer(UID shelfID, byte col, byte row, bool onOff);
+void pollShelves();
 
 // globals
 typedef struct {
@@ -21,7 +23,7 @@ typedef struct {
     byte addr;
 } ShelfDev;
 
-ShelfDev shelves[NUMSHELFDEVICES];  //= {{0,0}}
+ShelfDev shelves[NUMSHELFDEVICES + 1];  //= {{0,0}}
 
 // --- utility function ---
 byte handledEndTransmission(void) {
@@ -29,9 +31,11 @@ byte handledEndTransmission(void) {
     if (worked) {
         Serial.println("endTransmission failed on with code ");
         Serial.println(worked, HEX);
+        pollShelves();
     } else {
         // Serial.println("handle worked");
     }
+
     return worked;
 }
 
@@ -61,10 +65,24 @@ void loop() {
         Serial.println("waitng...");
         // delay(1500);
     }
+
+    pollShelves();
+    for (int i = 0; shelves[i].uid != 0; i++) {
+        ShelfDev shelf = shelves[i];
+        int width      = readShelfReg(shelf.addr, SHELF_DRAWERS_WIDE);
+        int height     = readShelfReg(shelf.addr, SHELF_DRAWERS_HIGH);
+        for (int row = 0; row < height; row += 1) {
+            for (int col = 0; col < width; col += 1) {
+                setDrawer(shelf.uid, col, row, true);
+                delay(500);
+                setDrawer(shelf.uid, col, row, false);
+            }
+        }
+    }
 }
 
 // -- impls and tools ---
-
+#define DEV_ADDR_NOT_FOUND 0xff
 byte getDevAddrForUID(UID uid) {
     // return of 0xff means it failed
 
@@ -74,7 +92,7 @@ byte getDevAddrForUID(UID uid) {
         }
     }
     // not found
-    return 0xff;
+    return DEV_ADDR_NOT_FOUND;
 }
 
 int setDevAddrForUID(UID uid, byte addr) {
@@ -145,6 +163,33 @@ void writeShelfUID(byte shelfAddr, UID id) {
     }
 }
 
+bool _shelf_even_there(byte addr) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void pollShelves() {
+    int shiftup = 0;
+    for (int i = 0; shelves[i].uid != 0; i += 1) {
+        ShelfDev shelf = shelves[i];
+
+        if (!_shelf_even_there(shelf.addr)) {
+            Serial.print("removing shelf 0x");
+            Serial.println(shelf.uid);
+            shelves[i] = {};
+            shiftup += 1;
+            continue;
+        } else {
+            shelves[i]           = {};
+            shelves[i - shiftup] = shelf;
+        }
+    }
+}
+
 byte next_shelf_addr = ASSIGNED_SHELF_BASE_ADDR;
 void enrollNewShelf() {
     Serial.println("enrolling shelf");
@@ -170,7 +215,7 @@ void enrollNewShelf() {
 
     delay(100);
 
-        Serial.println("Done enrolling shelf");
+    Serial.println("Done enrolling shelf");
 }
 
 void onShelfPing(int numBytes) {
@@ -195,4 +240,17 @@ void onShelfPing(int numBytes) {
     Serial.println("queueing enroll in todo");
 
     todo |= TODO_ENROLL_SHELF;
+}
+
+void setDrawer(UID shelfID, byte col, byte row, bool onOff) {
+    byte addr = getDevAddrForUID(shelfID);
+    if (addr == DEV_ADDR_NOT_FOUND) {
+        Serial.print("Device id 0x");
+        Serial.print(shelfID, HEX);
+        Serial.println(" not found, skipping write");
+        return;
+    }
+    writeShelfReg(addr, SHELF_SEL_COL, col);
+    writeShelfReg(addr, SHELF_SEL_ROW, row);
+    writeShelfReg(addr, SHELF_DRAWER_STAT, onOff);
 }
