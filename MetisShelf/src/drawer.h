@@ -3,24 +3,18 @@
 #include <stdint.h>
 #include "config.h"
 
-#define D_SIZE (SH_HEIGHT*SH_WIDTH)
-#define D_BYTES ((SH_SIZE+0x07)>>3)
+#define D_SIZE (D_HEIGHT*D_WIDTH)
+#define D_BYTES ((D_SIZE+0x07)>>3)
 
 typedef struct drawer_s {
     uint8_t slots[D_BYTES];
 } Drawer;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-void shelf_init(void);
-void shelf_clearall(void);
-void shelf_show(Drawer *s);
-int shelf_isset(Drawer *s, uint8_t y, uint8_t x);
-int shelf_set(Drawer *s, uint8_t y, uint8_t x);
-int shelf_clear(Drawer *s, uint8_t y, uint8_t x);
-void shelf_clearstate(Drawer *s);
-#ifdef __cplusplus
-}    
-#endif
+void drawer_init(void);
+void drawer_clearall(void);
+void drawer_show(Drawer *s);
+int drawer_isset(Drawer *s, uint8_t y, uint8_t x);
+int drawer_set(Drawer *s, uint8_t y, uint8_t x);
+int drawer_clear(Drawer *s, uint8_t y, uint8_t x);
+void drawer_clearstate(Drawer *s);
 #endif//shelf.h ends here
