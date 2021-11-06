@@ -1,26 +1,7 @@
 from flask import Flask, request, send_file, jsonify
+import db
 
-
-db = [
-    {
-        'name': "part name",
-        'shelf_id': 11283,
-        'row': 0,
-        'col': 0,
-    },
-    {
-        'name': "another part",
-        'shelf_id': 1111,
-        'row': 1,
-        'col': 1,
-    },
-    {
-        'name': "yet another part",
-        'shelf_id': 1111,
-        'row': 2,
-        'col': 1,
-    }
-]
+db = Database('database.json')
 
 app = Flask(__name__)
 
@@ -44,7 +25,7 @@ def change_led():
 
 @app.route('/get_db')
 def get_db():
-    return jsonify(db)
+    return jsonify(db.data)
 
 if __name__ == '__main__':
     app.run()

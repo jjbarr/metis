@@ -15,35 +15,30 @@ class Database:
     def addItem(self,name,ID,x,y):
         name=name.lower()
         for i in self.data:
-            if i["Name"] == name:
-                print("Not Added")
-                return "Name already taken"
-            if i["Row"] == y and i["Col"] == x and i["Shelf_ID"]==ID:
-                print("Not Added")
-                return "Another Item is already here"
+            if i["name"] == name:
+                return False
+            if i["row"] == y and i["col"] == x and i["shelf_id"]==ID:
+                return False
         with open(self.file,"w") as write_file:
-
-            self.data.append({"Name":name , "Shelf_ID":ID, "Row":y, "Col":x})
-            self.data = sorted(self.data, key=lambda i: i["Shelf_ID"])
+            self.data.append({"Name":name , "shelf_id":ID, "row":y, "col":x})
+            self.data = sorted(self.data, key=lambda i: i["shelf_id"])
             json.dump(self.data,write_file)
-
+        return True
 
     def search(self,Name,ID,start = 0,end = None):
         Name = Name.lower()
         for i in self.data:
-            if i["Shelf_ID"]==ID and i["Name"]==Name:
+            if i["shelf_id"]==ID and i["name"].lower()==Name:
                 return i
-        """
-        half = len(self.data)//2
-        if end==None:
-            end = len(self.data)
-        if ID==self.data[half]["Shelf_ID"]:
-            for i in self.data[]
-        elif self.data[half]["Shelf_ID"]<ID:
-            return self.search(Name,ID,start=start,end = half)
-        else:
-            return self.search(Name,ID,start=half,end=end)
-        """
+        # half = len(self.data)//2
+        # if end==None:
+        #     end = len(self.data)
+        # if ID==self.data[half]["Shelf_ID"]:
+        #     for i in self.data[]
+        # elif self.data[half]["Shelf_ID"]<ID:
+        #     return self.search(Name,ID,start=start,end = half)
+        # else:
+        #     return self.search(Name,ID,start=half,end=end)
     def removeItem(self,Name,ID):
         item = self.search(Name,ID)
         self.data.remove(item)
