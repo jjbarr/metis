@@ -1,5 +1,17 @@
 from flask import Flask, request, send_file, jsonify
-import db
+from db import Database
+import serial
+## SERIAL:
+## drop whitespace
+## 'x' clear all racks.
+## 'c[0-9A-F]{8}' clear specified rack.
+## 's[0-9A-F]{8}[0-9A-F]{4}' set specified slot.
+## 'u[0-9A-F]{8}[0-9A-F]{4}' clear specified slot. 
+## 'ei' enumerate ids: send back identifiers for all connected racks.
+##      Respond with [0-9A-F]{8}*X
+
+PORT = '/dev/ttyACM0'
+sio = serial.Serial(PORT, 9600)
 
 db = Database('database.json')
 

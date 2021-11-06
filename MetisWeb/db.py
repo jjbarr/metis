@@ -5,7 +5,7 @@ class Database:
         self.file = file
         try:
             with open(file,"r") as write_file:
-                self.data= json.load(write_file)
+                self.data = json.load(write_file)
                 write_file.close()
         except:
             open(file,"w")

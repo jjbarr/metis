@@ -76,6 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
             })();
         });
         refreshList(db, '.*');
-    });
+    })();
 });
 
