@@ -1,11 +1,13 @@
-//
+
 
 #include <../../MetisShelfProtocol.h>
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <Wire.h>
 
 // Cunction Prototype for the I2C peripheral event handler
-void onI2CReceive(int);
+void onI2CWrite(int);
+void onI2CRead();
 
 // --- hardware / pin names ---
 #define INDICATOR LED_BUILTIN
@@ -31,10 +33,8 @@ void setup() {
     // it boots as in unknown device
     Wire.begin(UNASSIGNED_DEV_ADDR);  // join i2c bus with address #4
     // register the I2C Handlers
-    Wire.onReceive(onI2CReceive);  // register event for incoming i2c writes
-    // Wire.onRequest(fnName);
-
-    // test if we can tranmist to ourselves
+    Wire.onReceive(onI2Write);
+    Wire.onRequest(onI2CRead);
 
     // ...
     Serial.println(" done!");
@@ -54,7 +54,7 @@ void loop() {
 
 // function that executes whenever data is received from master
 // this function is registered as an event, see setup()
-void onI2CReceive(int nBytesRxed) {
+void onI2CWrite(int nBytesRxed) {
     // while (1 < Wire.available())  // loop through all but the last
     // {
     //     char c = Wire.read();  // receive byte as a character
@@ -63,3 +63,5 @@ void onI2CReceive(int nBytesRxed) {
     int x = Wire.read();    // receive byte as an integer
     Serial.print((char)x);  // print the integer
 }
+
+void onI2CRead() {}
