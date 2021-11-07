@@ -1,0 +1,23 @@
+[
+    {
+        "name": "part name",
+        "shelf_id": 11283,
+        "row": 0,
+        "col": 0,
+        "selected": false
+    },
+    {
+        "name": "another part",
+        "shelf_id": 1111,
+        "row": 1,
+        "col": 1,
+        "selected": false
+    },
+    {
+        "name": "yet another part",
+        "shelf_id": 1111,
+        "row": 2,
+        "col": 1,
+        "selected": false
+    }
+]
