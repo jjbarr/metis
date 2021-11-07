@@ -20,7 +20,7 @@ void setUIDByte(int, byte);
 void writeDrawer(Drawer* drawer, byte col, byte row, bool onOff);
 
 // --- hardware / pin names ---
-#define WAKE_DELAY 100
+#define WAKE_DELAY 500
 #define INDICATOR LED_BUILTIN
 #define CLEAR_UID_ON_BOOT 0
 

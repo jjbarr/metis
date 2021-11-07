@@ -5,37 +5,48 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Wire.h>
+// #include <serinter.h>
 
 #define NUMSHELFDEVICES 16
+#define DEBUGPRINTS 1
 
 // --- prototypes ---
 void onShelfPing(int numBytes);
 byte readShelfReg(byte shelfAddr, byte regAddr);
-void writeShelfReg(byte shelfAddr, byte regAddr, byte value);
+int writeShelfReg(byte shelfAddr, byte regAddr, byte value);
 void enrollNewShelf();
 UID generateNewUID();
 int setDrawer(UID shelfID, byte col, byte row, bool onOff);
 void pollShelves();
 
-// globals
+// --- globals structs ---
 typedef struct {
     UID uid;
     byte addr;
 } ShelfDev;
 
-ShelfDev shelves[NUMSHELFDEVICES + 1];  //= {{0,0}}
+ShelfDev shelves[NUMSHELFDEVICES + 1] = {};  //= {{0,0}}
+
+// msg uplink = {};
 
 // --- utility function ---
+#if DEBUGPRINTS == 1
+    #define debugout(...)
+    #define debugoutln(...)
+#else
+    #define debugout Serial.print
+    #define debugoutln Serial.println
+#endif
+
 byte handledEndTransmission(void) {
     byte worked = Wire.endTransmission(true);
     if (worked) {
-        Serial.println("endTransmission failed on with code ");
-        Serial.println(worked, HEX);
-        pollShelves();
+        debugoutln("endTransmission failed on with code ");
+        debugoutln(worked, HEX);
+        pollShelves();  // clean up globally allocated structs
     } else {
-        // Serial.println("handle worked");
+        // debugoutln("handle worked");
     }
-
     return worked;
 }
 
@@ -44,9 +55,10 @@ byte handledEndTransmission(void) {
 void setup() {
     Wire.begin(HUB_ADDR);
     Wire.onReceive(onShelfPing);
+    // serinter_init();
     Serial.begin(9600);
 
-    Serial.println(" --- starting --- ");
+    debugoutln(" --- starting --- ");
 }
 
 byte todo = 0;
@@ -60,13 +72,15 @@ void loop() {
         todo &= ~TODO_ENROLL_SHELF;
         did_thing |= true;
     }
-
     if (todo == 0 && did_thing) {
-        Serial.println("waitng...");
+        debugoutln("waitng...");
         // delay(1500);
     }
 
+    // next_msg(&uplink);
+
     pollShelves();
+
     for (int i = 0; shelves[i].uid != 0; i++) {
         ShelfDev shelf = shelves[i];
         int width      = readShelfReg(shelf.addr, SHELF_DRAWERS_WIDE);
@@ -86,14 +100,11 @@ void loop() {
 // -- impls and tools ---
 #define DEV_ADDR_NOT_FOUND 0xff
 byte getDevAddrForUID(UID uid) {
-    // return of 0xff means it failed
-
     for (int i = 0; i < NUMSHELFDEVICES; i++) {
         if (shelves[i].uid == uid) {
             return shelves[i].addr;
         }
     }
-    // not found
     return DEV_ADDR_NOT_FOUND;
 }
 
@@ -127,7 +138,7 @@ UID generateNewUID(void) {
 
 byte readShelfReg(byte shelfAddr, byte regAddr) {
     // TODO add printing here w/ debug macro is DEBUG(...) / DEBUGLN(...) that
-    // maps to Serial.print(...) / Serial.println(...)
+    // maps to debugout(...) / debugoutln(...)
     Wire.beginTransmission(shelfAddr);
     Wire.write(regAddr);
     handledEndTransmission();
@@ -136,11 +147,13 @@ byte readShelfReg(byte shelfAddr, byte regAddr) {
     return Wire.read();
 }
 
-void writeShelfReg(byte shelfAddr, byte regAddr, byte value) {
+int writeShelfReg(byte shelfAddr, byte regAddr, byte value) {
     Wire.beginTransmission(shelfAddr);
     byte msg[] = {regAddr, value};
     Wire.write((char*)&msg, 2);
-    handledEndTransmission();
+    if (handledEndTransmission())
+        return -1;
+    return 0;
 }
 
 UID readShelfUID(byte shelfAddr) {
@@ -158,10 +171,10 @@ void writeShelfUID(byte shelfAddr, UID id) {
 
     UID readbackID = readShelfUID(shelfAddr);
     if (readbackID != id) {
-        Serial.print("uid write failed, wrote 0x");
-        Serial.println(id, HEX);
-        Serial.print(" but read back 0x");
-        Serial.println(readbackID, HEX);
+        debugout("uid write failed, wrote 0x");
+        debugoutln(id, HEX);
+        debugout(" but read back 0x");
+        debugoutln(readbackID, HEX);
     }
 }
 
@@ -180,8 +193,8 @@ void pollShelves() {
         ShelfDev shelf = shelves[i];
 
         if (!_shelf_even_there(shelf.addr)) {
-            Serial.print("removing shelf 0x");
-            Serial.println(shelf.uid);
+            debugout("removing shelf 0x");
+            debugoutln(shelf.uid);
             shelves[i] = {};
             shiftup += 1;
             continue;
@@ -194,17 +207,17 @@ void pollShelves() {
 
 byte next_shelf_addr = ASSIGNED_SHELF_BASE_ADDR;
 void enrollNewShelf() {
-    Serial.println("enrolling shelf");
+    debugoutln("enrolling shelf");
 
     // check uid
     UID uid = readShelfUID(UNASSIGNED_SHELF_ADDR);
-    Serial.print("uid = ");
-    Serial.println(uid, HEX);
+    debugout("uid = ");
+    debugoutln(uid, HEX);
 
     if (uid == 0) {
         UID newuid = generateNewUID();
-        Serial.print("assigning new uid 0x");
-        Serial.println(newuid, HEX);
+        debugout("assigning new uid 0x");
+        debugoutln(newuid, HEX);
         writeShelfUID(UNASSIGNED_SHELF_ADDR, newuid);
         uid = newuid;
     }
@@ -217,7 +230,7 @@ void enrollNewShelf() {
 
     delay(100);
 
-    Serial.println("Done enrolling shelf");
+    debugoutln("Done enrolling shelf");
 }
 
 void onShelfPing(int numBytes) {
@@ -225,21 +238,21 @@ void onShelfPing(int numBytes) {
     // check I2C input
     // TODO: put this into a function
     if (Wire.available() != 1) {
-        Serial.print("enroll requested ");
-        Serial.print(Wire.available());
-        Serial.print(", invalid request size");
+        debugout("enroll requested ");
+        debugout(Wire.available());
+        debugout(", invalid request size");
         return;
     }
 
     byte cmd = Wire.read();
 
     if (cmd != HUB_ENROL_REQ) {
-        Serial.print("unknown command 0x");
-        Serial.println(cmd, HEX);
+        debugout("unknown command 0x");
+        debugoutln(cmd, HEX);
         return;
     }
 
-    Serial.println("queueing enroll in todo");
+    debugoutln("queueing enroll in todo");
 
     todo |= TODO_ENROLL_SHELF;
 }
@@ -247,12 +260,16 @@ void onShelfPing(int numBytes) {
 int setDrawer(UID shelfID, byte col, byte row, bool onOff) {
     byte addr = getDevAddrForUID(shelfID);
     if (addr == DEV_ADDR_NOT_FOUND) {
-        Serial.print("Device id 0x");
-        Serial.print(shelfID, HEX);
-        Serial.println(" not found, skipping write");
+        debugout("Device id 0x");
+        debugout(shelfID, HEX);
+        debugoutln(" not found, skipping write");
         return -1;
     }
-    writeShelfReg(addr, SHELF_SEL_COL, col);
-    writeShelfReg(addr, SHELF_SEL_ROW, row);
-    writeShelfReg(addr, SHELF_DRAWER_STAT, onOff);
+    if (writeShelfReg(addr, SHELF_SEL_COL, col))
+        return -1;
+    if (writeShelfReg(addr, SHELF_SEL_ROW, row))
+        return -1;
+    if (writeShelfReg(addr, SHELF_DRAWER_STAT, onOff))
+        return -1;
+    return 0;
 }
