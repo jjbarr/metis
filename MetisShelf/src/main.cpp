@@ -47,7 +47,8 @@ void setup() {
     Wire.endTransmission(true);
     Serial.println("... done");
 
-    writeDrawer(&drawer, 0, 0, true);
+    // start them as all off
+    writeDrawer(&drawer, 0, 0, false);
 }
 
 void loop() {

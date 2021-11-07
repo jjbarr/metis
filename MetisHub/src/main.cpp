@@ -5,7 +5,6 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Wire.h>
-#include <serinter.h>
 
 #define NUMSHELFDEVICES 16
 #define DEBUGPRINTS 1
@@ -80,7 +79,7 @@ void loop() {
 
     pollSerial();
 
-    pollShelves();
+    // pollShelves();
 
     // for (int i = 0; shelves[i].uid != 0; i++) {
     //     ShelfDev shelf = shelves[i];
@@ -258,6 +257,21 @@ void onShelfPing(int numBytes) {
     todo |= TODO_ENROLL_SHELF;
 }
 
+int readDrawer(UID shelfID, byte col, byte row) {
+    byte addr = getDevAddrForUID(shelfID);
+    if (addr == DEV_ADDR_NOT_FOUND) {
+        debugout("Device id 0x");
+        debugout(shelfID, HEX);
+        debugoutln(" not found, skipping read");
+        return -1;
+    }
+    if (writeShelfReg(addr, SHELF_SEL_COL, col))
+        return -1;
+    if (writeShelfReg(addr, SHELF_SEL_ROW, row))
+        return -1;
+    return readShelfReg(addr, SHELF_DRAWER_STAT);
+}
+
 int writeDrawer(UID shelfID, byte col, byte row, bool onOff) {
     byte addr = getDevAddrForUID(shelfID);
     if (addr == DEV_ADDR_NOT_FOUND) {
@@ -275,9 +289,69 @@ int writeDrawer(UID shelfID, byte col, byte row, bool onOff) {
     return 0;
 }
 
-void readSerialUntilNotSpaces() {
-    while (Serial.peek() == ' ' || Serial.peek() == -1)
-        Serial.read();
+typedef struct {
+    bool valid;
+    UID uid;
+    byte row;
+    byte col;
+} BodyThreePack;
+
+#define INVALIDTHREEPACK                                                       \
+    (BodyThreePack) {                                                          \
+        false, 0, 0, 0                                                         \
+    }
+
+#define CLIP_OFF_SECTION(body) body = body.substring(body.indexOf('|') + 1)
+#define READ_NEXT_VALUE(body) body.substring(0, body.indexOf('|')).toInt()
+
+BodyThreePack parseThreeinput(String body) {
+
+    if (body.indexOf('|') != 0)
+        return INVALIDTHREEPACK;
+
+    CLIP_OFF_SECTION(body);
+    UID id = READ_NEXT_VALUE(body);
+
+    CLIP_OFF_SECTION(body);
+    byte row = READ_NEXT_VALUE(body);
+
+    CLIP_OFF_SECTION(body);
+    byte col = READ_NEXT_VALUE(body);
+
+    debugout("id=");
+    debugout(id);
+    debugout(", ");
+
+    debugout("row=");
+    debugout(row);
+    debugout(", ");
+
+    debugout("col=");
+    debugout(col);
+    debugout(", ");
+
+    debugoutln();
+
+    debugout("remaining=");
+    debugoutln(body);
+
+    debugoutln();
+    return {true, id, row, col};
+}
+
+// void serialSetDrawer(String body) {
+//     auto pack = parseThreeinput(body);
+// }
+void toggleClearDrawer(String body) {
+    auto pack = parseThreeinput(body);
+
+    int onOff = readDrawer(pack.uid, pack.col, pack.row);
+    if (onOff == -1) {
+        debugoutln("unable to read pack");
+        return;
+    }
+
+    writeDrawer(pack.uid, pack.col, pack.row, !(bool)onOff);
 }
 
 void pollSerial() {
@@ -287,157 +361,33 @@ void pollSerial() {
         Serial.print("...");
 
     char msgkind = Serial.read();
-    // String body  = Serial.readStringUntil('\n');
+    Serial.setTimeout((int)((uint16_t)0 - 1));
+    String body = Serial.readStringUntil('\n');
+    Serial.read();
     Serial.println(msgkind);
 
+    debugout("body=");
+    debugoutln(body);
+
     switch (msgkind) {
-    case 'e': enumerateDevices(body); break;
-    case 'x': clearShelf(body); break;
-    case 'd': listDimensions(body); break;
-    case 'c': serialClearDrawer(body); break;
-    case 's': serialSetDrawer(body); break;
+    // case 'e': enumerateDevices(); break;
+    // case 'x': clearShelf(); break;
+    // case 'd': listDimensions(); break;
+    case 'c':
+        // toggleClearDrawer(body);  // serialClearDrawer(body);
+        // break;
+    case 's':
+        toggleClearDrawer(body);  // serialSetDrawer(body);
+        break;
     default:
         Serial.println("e");
-        Serial.readStringUntil('\n');
-        Serial.read();
+        // Serial.readStringUntil('\n');
+        // Serial.read();
         break;
     }
+
+    // while (Serial.read() != -1)
+    //     ;
+
+    debugoutln("exiting pollSerial");
 }
-
-// // // `s 5 0 0 \n`
-
-// // for (;;)
-// //     String next = Serial.readStringUntil(' ');
-
-// // String body = Serial.readStringUntil('|');
-// // Serial.println(body);
-// int num;
-// for (;;) {
-//     num = Serial.parseInt();
-//     Serial.print(num);
-//     Serial.print(Serial.read());
-// }
-
-// switch (msgkind) {
-// // get id
-// case 'c':
-// case 's':
-// case 'x':
-// case 'd':
-//     readSerialUntilNotSpaces();
-//     Serial.print("[ ]");
-
-//     UID id = Serial.parseInt();
-//     Serial.print("id=");
-//     Serial.print(id);
-// case 'c':
-// case 's':
-//     readSerialUntilNotSpaces();
-//     Serial.print("[ ]");
-
-//     byte row = Serial.parseInt();
-//     Serial.print("row=");
-//     Serial.print(row);
-
-//     readSerialUntilNotSpaces();
-//     Serial.print("[ ]");
-
-//     byte col = Serial.parseInt();
-//     Serial.print("col=");
-//     Serial.print(col);
-
-//     readSerialUntilNotSpaces();
-// case 'c': writeDrawer(id, col, row, false);
-// case 's': writeDrawer(id, col, row, true);
-// default: Serial.println('[E]');
-// }
-
-Serial.println();
-}
-
-// #define GUARD_FOR_WHITESPACE_NEXT(msg)                                         \
-//     if (Serial.read() != ' ') {                                                \
-//         was_error = true;                                                      \
-//         Serial.print(msg);                                                     \
-//         break;                                                                 \
-//     }
-
-// #define MIRROR(c, e)                                                           \
-//     debugout(c);                                                               \
-//     debugout(e);
-
-// void pollSerial() {
-//     bool was_error = false;
-//     char msgkind   = Serial.read();
-//     MIRROR(msgkind, "");
-
-//     if (msgkind == -1)
-//         return;  // nothing to parse
-//     else {
-//     }
-
-//     Serial.readStringUntil(' ');
-//     for (;;)
-//         GUARD_FOR_WHITESPACE_NEXT("[not space after first command
-//         letter]");
-
-//     switch (msgkind) {
-//     case 'c':
-//     case 's':
-//     case 'x':
-//     case 'd':
-//         UID id = Serial.parseInt();
-//         GUARD_FOR_WHITESPACE_NEXT("[no space after id arg]");
-//         MIRROR(id, ' ');
-
-//     // prep row and col if needed
-//     case 'c':
-//     case 's':  // clear drawer by id and coord
-//         /// rx: `id row col\n`
-
-//         byte row = Serial.parseInt();
-//         GUARD_FOR_WHITESPACE_NEXT("[no spaceafter row]");
-//         MIRROR(row, ' ');
-
-//         byte col = Serial.parseInt();
-//         // GUARD_FOR_WHITESPACE_NEXT("[no space after col]");
-//         MIRROR(col, "");
-
-//     case 'c':  // set drawer by id and coord
-//         /// rx: `id row col\n`
-//         writeDrawer(id, col, row, false);
-//         break;
-
-//     case 's': {  // set drawer by id and coord
-//         /// rx: `id row col\n`
-//         writeDrawer(id, col, row, false);
-//         break;
-//     }
-//     case 'x': {  // turn shelf off by id
-//         /// rx: `id\n`
-//         break;
-//     }
-//     case 'd': {  // send back dimentions
-//                  /// rx: `id\n` tx:`width height\n`
-//         break;
-//     }
-//     case 'e': {  // enumerate ids
-//         // rx:`\n` tx`<id separated by spaces>\n`
-//         break;
-//     }
-//     default: {
-//         was_error |= true;
-//     }
-//     }
-
-//     Serial.readStringUntil('\n');
-
-//     // GUARD for newline next
-//     if (Serial.read() != '\n')
-//         was_error = true;
-
-//     if (was_error)
-//         Serial.println('e');
-//     else
-//         Serial.println('s');
-// }
