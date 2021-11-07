@@ -36,20 +36,31 @@ function serverChangeState(item) {
 
 function refreshList(db, filter) {
     const mount = document.getElementById('list-mount');
-    const outer = document.createElement('div');
-    outer.classList.add();
-    db.filter((e) => e.name.match(filter))
+    const outer = document.createElement('ul');
+    const unselected = document.createElement('ul');    
+    const selected = document.createElement('div');
+    selected.classList.add('parts-list');
+    unselected.classList.add('parts-list');
+    const selected_label = document.createElement('h2');
+    selected_label.innerText = 'Your Parts';
+    const unselected_label = document.createElement('h2');
+    unselected_label.innerText = 'Our Parts';
+    outer.appendChild(selected_label);
+    outer.appendChild(selected);
+    outer.appendChild(document.createElement('hr'));
+    outer.appendChild(unselected_label);
+    outer.appendChild(unselected);
+    db.filter((e) => e.name.match(filter) || e.selected)
         .forEach((e) => {
-            const elt = document.createElement('div');
+            const elt = document.createElement('li');
             elt.classList.add('part');
             elt.innerText = e.name;
-            if(e.selected) elt.classList.add('selected');
             elt.addEventListener('click', () => {
                 e.selected = !e.selected;
-                elt.classList.toggle('selected');
                 serverChangeState(e);
+                refreshList(db, filter);
             });
-            outer.appendChild(elt);
+            (e.selected? selected:unselected).appendChild(elt);
         });
     while(mount.firstChild) mount.removeChild(mount.firstChild);
     mount.appendChild(outer);

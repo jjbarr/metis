@@ -10,8 +10,8 @@ import serial
 ## 'ei' enumerate ids: send back identifiers for all connected racks.
 ##      Respond with [0-9A-F]{8}*X
 
-PORT = '/dev/ttyACM0'
-sio = serial.Serial(PORT, 9600)
+#PORT = '/dev/ttyACM0'
+#sio = serial.Serial(PORT, 9600)
 
 db = Database('database.json')
 
