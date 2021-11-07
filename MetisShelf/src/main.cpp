@@ -141,6 +141,10 @@ void writeReg(byte regAddr, byte value) {
         // TODO: make this do things.
         Serial.print("turn all leds to ");
         Serial.println(value);
+        if (value == 0) {
+            drawer_clearstate(&drawer);
+            drawer_show(&drawer);
+        }
         break;
     }
     default: {
