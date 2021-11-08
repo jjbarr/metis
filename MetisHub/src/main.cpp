@@ -58,7 +58,7 @@ void setup() {
     // serinter_init();
     Serial.begin(9600);
 
-    debugoutln(" --- starting --- ");
+    Serial.println(" --- starting --- ");
 }
 
 byte todo = 0;
@@ -81,7 +81,7 @@ void loop() {
 
     pollSerial();
 
-        // for (int i = 0; shelves[i].uid != 0; i++) {
+    // for (int i = 0; shelves[i].uid != 0; i++) {
     //     ShelfDev shelf = shelves[i];
     //     int width      = readShelfReg(shelf.addr, SHELF_DRAWERS_WIDE);
     //     int height     = readShelfReg(shelf.addr, SHELF_DRAWERS_HIGH);
@@ -378,10 +378,10 @@ void pollSerial() {
     if (Serial.peek() == -1)
         return;
     else
-        Serial.print("...");
+        debugoutln("...");
 
     char msgkind = Serial.read();
-    Serial.setTimeout((int)((uint16_t)0 - 1));
+    // Serial.setTimeout((int)((uint16_t)0 - 1));
     String body = Serial.readStringUntil('\n');
     Serial.read();
     Serial.println(msgkind);
@@ -415,5 +415,5 @@ void pollSerial() {
     //     ;
 
     debugoutln("exiting pollSerial");
-    pollShelves();
+    // pollShelves();
 }

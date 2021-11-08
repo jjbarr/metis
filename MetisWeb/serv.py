@@ -5,6 +5,7 @@ import serial
 import json
 
 ENABLE_SELECTION = True
+HOT_DATABASE_RELOAD = False
 
 
 # PORT = '/dev/ttyACM0'
@@ -63,14 +64,25 @@ def change_led():
     return ("", 200)
 
 
+with app.app_context():
+    if HOT_DATABASE_RELOAD:
+
+        def _load_db():
+            with open("database.json") as file:
+                return jsonify(json.load(file))
+
+    else:
+
+        with open("database.json") as file:
+            jsondb = jsonify(json.load(file))
+
+        def _load_db():
+            return jsondb
+
+
 @app.route("/get_db")
 def get_db():
-
-    print("runningget_db")
-    with open("database.json") as file:
-        return jsonify(json.load(file))
-
-    # return jsonify(db.data)
+    return _load_db()
 
 
 if __name__ == "__main__":

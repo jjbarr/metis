@@ -221,18 +221,18 @@ void setUIDByte(int byteIndex, byte value) {
 }
 
 void writeDrawer(Drawer* drawer_ref, byte col, byte row, bool onOff) {
-    Serial.print("set led ");
-    Serial.print(col);
-    Serial.print(" over and ");
-    Serial.print(row);
-    Serial.print(" down ");
+    // Serial.print("set led ");
+    // Serial.print(col);
+    // Serial.print(" over and ");
+    // Serial.print(row);
+    // Serial.print(" down ");
     if (onOff) {
         drawer_set(drawer_ref, row, col);
-        Serial.println("on");
+        // Serial.println("on");
 
     } else {
         drawer_clear(drawer_ref, row, col);
-        Serial.println("off");
+        // Serial.println("off");
     }
 
     drawer_show(drawer_ref);

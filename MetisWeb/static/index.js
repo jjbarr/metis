@@ -50,7 +50,7 @@ function refreshList(db, filter) {
         .forEach((e) => {
             const elt = document.createElement('li');
             elt.classList.add('part');
-            elt.innerText = e.name + ' (' + e.col+' ,'+e.row + ')';
+            elt.innerText = e.name ;//+ ' (' + e.col+' ,'+e.row + ')';
             elt.addEventListener('click', () => {
                 
                 e.selected = !!!e.selected;
@@ -70,6 +70,7 @@ function refreshList(db, filter) {
 
 document.addEventListener('DOMContentLoaded', () => {
     (async () => {
+        await fetch('/reset_leds', {method: 'POST'});
         let db = await (await fetch('/get_db')).json();
         db.sort((a,b) => a.name.localeCompare(b));
         document.getElementById('searchbox')
