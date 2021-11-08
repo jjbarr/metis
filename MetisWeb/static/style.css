@@ -1,66 +1,90 @@
 p {
-	font-size: 16px;
-	font: sans-serif;
+  font-size: 16px;
+  font: sans-serif;
 }
 
 h1 {
-    padding-top: 20px;
-    font-size: 48px;
-    font-family: sans-serif;
-    text-align: center;
+  padding-top: 20px;
+  font-size: 48px;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+h3 {
+  font-family: sans-serif;
+  text-align: center;
+  color: gray;
+  padding-bottom: 20px;
 }
 
 body {
-    background-color: #edfcff;
-    margin: 20px;
+  background-color: #edfcff;
+  margin: 20px;
 }
 
 h2 {
-	font-size: 18px;
-    font-family: sans-serif;
-    text-align: center;
+  font-size: 18px;
+  font-family: sans-serif;
+  text-align: center;
 }
 
 input[type="button"] {
-	padding: 12px;
-    font-size: 20px;
-	border-radius: 5px;
-	background-color: white;
+  padding: 12px;
+  font-size: 20px;
+  border-radius: 5px;
+  background-color: white;
 }
 input[type="button"]:hover {
-	background-color: #FAFAFA;
-	box-shadow: 1px 2px;
+  background-color: #fafafa;
+  box-shadow: 1px 2px;
 }
 
 .parts-search {
-	width: 80%; /* Full-width */
-	font-size: 20px; /* Increase font-size */
-	padding: 12px 12px 12px 12px; /* Add some padding */
-	border: 2px solid #ddd; /* Add a grey border */
-	margin-bottom: 12px; /* Add some space below the input */
+  width: 77%; /* Full-width */
+  font-size: 20px; /* Increase font-size */
+  padding: 12px 12px 12px 12px; /* Add some padding */
+  border: 2px solid #ddd; /* Add a grey border */
+  margin-bottom: 12px; /* Add some space below the input */
+}
+
+/* @media only screen and (min-device-width: 1112px) and (max-device-width: 1112px) and (orientation: landscape) and (-webkit-min-device-pixel-ratio: 2) {
+	.parts-search {
+	  width: 80%; 
+	}
+  } */
+
+@media only screen and (min-device-width: 834px) and (max-device-width: 834px) and (orientation: portrait) and (-webkit-min-device-pixel-ratio: 2) {
+  .parts-search {
+    width: 98%; /* Full-width */
+  }
+
+  #reset {
+    margin: 0 auto;
+    display: block;
+  }
 }
 
 .parts-list {
-	/* Remove default list styling */
-	list-style-type: none;
-	padding: 0;
-	margin: 0;
-	font: Sans-serif;
-	font-size: 16px;
+  /* Remove default list styling */
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  font: Sans-serif;
+  font-size: 16px;
 }
 
 .part {
-	border: 2px solid #ddd; /* Add a border to all links */
-	margin-top: -1px; /* Prevent double borders */
-	background-color: #f6f6f6; /* Grey background color */
-	padding: 12px; /* Add some padding */
-	text-decoration: none; /* Remove default text underline */
-	font-size: 22px; /* Increase the font-size */
-	color: black; /* Add a black text color */
-	display: block; /* Make it into a block element to fill the whole list */
-	font-family: sans-serif;
+  border: 2px solid #ddd; /* Add a border to all links */
+  margin-top: -1px; /* Prevent double borders */
+  background-color: #f6f6f6; /* Grey background color */
+  padding: 12px; /* Add some padding */
+  text-decoration: none; /* Remove default text underline */
+  font-size: 22px; /* Increase the font-size */
+  color: black; /* Add a black text color */
+  display: block; /* Make it into a block element to fill the whole list */
+  font-family: sans-serif;
 }
 
 .part:hover {
-	background-color: #eee; /* Add a hover effect to all links, except for headers */
+  background-color: #eee; /* Add a hover effect to all links, except for headers */
 }

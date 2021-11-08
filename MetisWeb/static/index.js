@@ -23,15 +23,20 @@
 ];*/
 
 function serverChangeState(item) {
-    (async () => {
-        await fetch('/change_led', {
+    //(async () => {
+        //await 
+       
+        body=JSON.stringify(item);
+        // alert(body);
+
+        fetch('/change_led', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(item)
+            body,
         });
         //right now we just... won't deal with errors.
         //we're talking to localhost
-    })();
+    //})();
 }
 
 function refreshList(db, filter) {
@@ -45,9 +50,11 @@ function refreshList(db, filter) {
         .forEach((e) => {
             const elt = document.createElement('li');
             elt.classList.add('part');
-            elt.innerText = e.name;
+            elt.innerText = e.name ;//+ ' (' + e.col+' ,'+e.row + ')';
             elt.addEventListener('click', () => {
-                e.selected = !e.selected;
+                
+                e.selected = !!!e.selected;
+                e.selected_bypass = e.selected ;
                 serverChangeState(e);
                 refreshList(db, filter);
             });
@@ -63,6 +70,7 @@ function refreshList(db, filter) {
 
 document.addEventListener('DOMContentLoaded', () => {
     (async () => {
+        await fetch('/reset_leds', {method: 'POST'});
         let db = await (await fetch('/get_db')).json();
         db.sort((a,b) => a.name.localeCompare(b));
         document.getElementById('searchbox')
@@ -74,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         document.getElementById('reset').addEventListener('click', () => {
             document.getElementById('searchbox').value = '';
+            
             db.forEach((e) => e.selected = false);
             refreshList(db, '.*');
             (async () => {

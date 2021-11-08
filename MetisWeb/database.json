@@ -1,4 +1,22 @@
 [
-    {"name": "leds", "shelf_id": "5", "row": 0, "col": 0}, 
-    {"name": "ic sockets", "shelf_id": "5", "row": 0, "col": 1}
-]
+    {"name": "leds", "shelf_id": "5", "row": 0, "col": 0},
+    {"name": "ic sockets", "shelf_id": "5", "row": 0, "col": 1},
+    {"name": "555 timers", "shelf_id": "5", "row": 0, "col": 2},
+    {"name": "wires", "shelf_id": "5", "row": 0, "col": 3},
+    {"name": "nuts", "shelf_id": "5", "row": 0, "col": 4},
+    {"name": "595 shift registers", "shelf_id": "5", "row": 1, "col": 0},
+    {"name": "watch batteries", "shelf_id": "5", "row": 1, "col": 1},
+    {"name": "bolts", "shelf_id": "5", "row": 1, "col": 2},
+    {"name": "screws", "shelf_id": "5", "row": 1, "col": 3},
+    {"name": "switches", "shelf_id": "5", "row": 1, "col": 4},
+    {"name": "resistors", "shelf_id": "5", "row": 2, "col": 0},
+    {"name": "diodes", "shelf_id": "5", "row": 2, "col": 1},
+    {"name": "breadboads", "shelf_id": "5", "row": 2, "col": 2},
+    {"name": "alarms", "shelf_id": "5", "row": 2, "col": 3},
+    {"name": "battery holders", "shelf_id": "5", "row": 2, "col": 4},
+    {"name": "aa batteries", "shelf_id": "5", "row": 3, "col": 0},
+    {"name": "capacitors", "shelf_id": "5", "row": 3, "col": 1},
+    {"name": "fuses", "shelf_id": "5", "row": 3, "col": 2},
+    {"name": "circuit breakers", "shelf_id": "5", "row": 3, "col": 3},
+    {"name": "motors", "shelf_id": "5", "row": 3, "col": 4}
+  ]

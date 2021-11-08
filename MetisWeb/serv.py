@@ -1,22 +1,30 @@
 from flask import Flask, request, send_file, jsonify
-from db import Database
-import serial
 
-## SERIAL:
-## drop whitespace
-## 'x' clear all racks.
-## 'c[0-9A-F]{8}' clear specified rack.
-## 's[0-9A-F]{8}[0-9A-F]{4}' set specified slot.
-## 'u[0-9A-F]{8}[0-9A-F]{4}' clear specified slot.
-## 'ei' enumerate ids: send back identifiers for all connected racks.
-##      Respond with [0-9A-F]{8}*X
+# from db import Database
+import serial
+import json
+
+ENABLE_SELECTION = True
+HOT_DATABASE_RELOAD = False
+
 
 # PORT = '/dev/ttyACM0'
 PORT = "/dev/tty.usbmodem146101"
-sio = serial.Serial(PORT, 9600)
+try:
+    sio = serial.Serial(PORT, 9600)
+except serial.serialutil.SerialException as err:
+    input("!!!UNABLE TO CONNECT TO MetisHub, it enter to continue in test mode!!!:")
+    sio = type(  # a dumby object
+        "SIOZombie",
+        (object,),
+        dict(
+            __getattr__=lambda self, *_, **__: self,
+            __call__=lambda self, *_, **__: None,
+        ),
+    )()
 
-db = Database("database.json")
 
+# db = Database("database.json")
 app = Flask(__name__)
 
 
@@ -32,21 +40,23 @@ def static_route(file):
 
 @app.route("/reset_leds", methods=["POST"])
 def reset_leds():
-    sio.write(b"x")
-    print("reset the leds")
+
+    print("resetting the leds")
+    sio.write("x\n".encode())
+    print("sent")
     return ("", 200)
 
 
 @app.route("/change_led", methods=["POST"])
 def change_led():
 
-    selected = request.json["selected"]
+    selected = request.json["selected_bypass"]
     row = selected = request.json["row"]
     col = request.json["col"]
     shelf_id = request.json["shelf_id"]
     name = request.json["name"]
-    print(f"{selected=}")
-    msg = f"{'s' if selected else 'c'}|{shelf_id}|{row}|{col}\n"  # |{name}\n"
+    print(f"{name=}, {selected=} {request.json['selected_bypass']=}")
+    msg = f"{'s' if request.json['selected_bypass'] else 'c'}|{shelf_id}|{row}|{col}\n"  # |{name}\n"
 
     print(f"sending {msg!r} ...")
     sio.write(msg.encode())
@@ -54,11 +64,26 @@ def change_led():
     return ("", 200)
 
 
+with app.app_context():
+    if HOT_DATABASE_RELOAD:
+
+        def _load_db():
+            with open("database.json") as file:
+                return jsonify(json.load(file))
+
+    else:
+
+        with open("database.json") as file:
+            jsondb = jsonify(json.load(file))
+
+        def _load_db():
+            return jsondb
+
+
 @app.route("/get_db")
 def get_db():
-    print("runningget_db")
-    return jsonify(db.data)
+    return _load_db()
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000, debug=True)

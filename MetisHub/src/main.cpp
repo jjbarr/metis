@@ -58,7 +58,7 @@ void setup() {
     // serinter_init();
     Serial.begin(9600);
 
-    debugoutln(" --- starting --- ");
+    Serial.println(" --- starting --- ");
 }
 
 byte todo = 0;
@@ -77,9 +77,9 @@ void loop() {
         // delay(1500);
     }
 
-    pollSerial();
-
     // pollShelves();
+
+    pollSerial();
 
     // for (int i = 0; shelves[i].uid != 0; i++) {
     //     ShelfDev shelf = shelves[i];
@@ -339,10 +339,21 @@ BodyThreePack parseThreeinput(String body) {
     return {true, id, row, col};
 }
 
-// void serialSetDrawer(String body) {
-//     auto pack = parseThreeinput(body);
-// }
-void toggleClearDrawer(String body) {
+void serialClearDrawer(String body) {
+    auto pack = parseThreeinput(body);
+    // Serial.println("serialClearDrawer not implemented");
+    // return;
+    writeDrawer(pack.uid, pack.col, pack.row, false);
+}
+
+void serialSetDrawer(String body) {
+    auto pack = parseThreeinput(body);
+    // Serial.println("serialSetDrawer not implemented");
+    // return;
+    writeDrawer(pack.uid, pack.col, pack.row, true);
+}
+
+void serialToggleDrawer(String body) {
     auto pack = parseThreeinput(body);
 
     int onOff = readDrawer(pack.uid, pack.col, pack.row);
@@ -354,14 +365,23 @@ void toggleClearDrawer(String body) {
     writeDrawer(pack.uid, pack.col, pack.row, !(bool)onOff);
 }
 
+void serialClearAll() {
+    debugoutln("clearing all everywhere");
+    for (int i = 0; shelves[i].uid != 0; i += 1) {
+        ShelfDev shelf = shelves[i];
+        writeShelfReg(shelf.addr, SHELF_CMD, 0);
+    }
+    debugoutln("... hopefully done cealring all the things");
+}
+
 void pollSerial() {
     if (Serial.peek() == -1)
         return;
     else
-        Serial.print("...");
+        debugoutln("...");
 
     char msgkind = Serial.read();
-    Serial.setTimeout((int)((uint16_t)0 - 1));
+    // Serial.setTimeout((int)((uint16_t)0 - 1));
     String body = Serial.readStringUntil('\n');
     Serial.read();
     Serial.println(msgkind);
@@ -371,13 +391,18 @@ void pollSerial() {
 
     switch (msgkind) {
     // case 'e': enumerateDevices(); break;
-    // case 'x': clearShelf(); break;
+    case 'x':
+        serialClearAll();  //
+        break;
     // case 'd': listDimensions(); break;
     case 'c':
-        // toggleClearDrawer(body);  // serialClearDrawer(body);
-        // break;
+        serialClearDrawer(body);  // serialClearDrawer(body);
+        break;
     case 's':
-        toggleClearDrawer(body);  // serialSetDrawer(body);
+        serialSetDrawer(body);  // serialSetDrawer(body);
+        break;
+    case 't':
+        serialToggleDrawer(body);  // serialSetDrawer(body);
         break;
     default:
         Serial.println("e");
@@ -390,4 +415,5 @@ void pollSerial() {
     //     ;
 
     debugoutln("exiting pollSerial");
+    // pollShelves();
 }
